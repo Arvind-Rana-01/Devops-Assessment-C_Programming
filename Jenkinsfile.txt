@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Check Compiler Version') {
+            steps {
+                bat 'gcc --version' // Check GCC version
+                bat 'make --version' // Check Make version
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building the C project...'
+                // Run CMake to configure the project
+                bat 'cmake . -G "Visual Studio 16 2019"' // Adjust the generator as needed
+                // Compile the project
+                bat 'cmake --build . --config Release'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                // Execute the tests
+                bat 'ctest --output-on-failure'
+            }
+        }
+    }
+    post {
+        success {
+            script {
+                emailext(
+                    body: 'Good news! The build was successful. Check console output at ${env.BUILD_URL}.',
+                    subject: 'Build Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}',
+                    to: 'arvindrana620445@gmail.com',
+                    attachLog: true
+                )
+            }
+        }
+        failure {
+            script {
+                echo 'Build failed!'
+                emailext(
+                    body: 'Unfortunately, the build failed. Check console output at ${env.BUILD_URL}.',
+                    subject: 'Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}',
+                    to: 'arvindrana620445@gmail.com',
+                    attachLog: true
+                )
+            }
+        }
+    }
+}
